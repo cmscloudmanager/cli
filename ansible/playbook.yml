@@ -1,0 +1,6 @@
+- name: CMS Cloud Manager
+  hosts: all
+  tasks:
+    - import_tasks: tasks/base.yml
+    - import_tasks: tasks/security.yml
+    - import_tasks: tasks/docker.yml

@@ -1,0 +1,48 @@
+- name: Configure server using geerlingguy.security
+  import_role:
+    name: geerlingguy.security
+  vars:
+    security_ssh_permit_root_login: "yes"
+    security_autoupdate_reboot: true
+    security_autoupdate_reboot_time: "03:00"
+
+- name: Allow regular packages to be installed automatically
+  lineinfile:
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    insertafter: 'Allowed-Origins'
+    line: "        \"${distro_id} stable\";\n        \"Docker ${distro_codename}\";"
+    regexp: '{distro_codename}";'
+    state: present
+    mode: '644'
+
+- name: Allow regular updates to be installed automatically
+  lineinfile:
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    line: '        "${distro_id} stable-updates";'
+    regexp: '-updates";'
+    state: present
+    mode: '644'
+
+- name: Correct security updates distro
+  lineinfile:
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    line: '        "${distro_id} stable-security";'
+    regexp: '-security";'
+    state: present
+    mode: '644'
+
+- name: Create directory for APT-Daily-Timer override
+  file:
+    dest: /etc/systemd/system/apt-daily.timer.d
+    state: directory
+    mode: '755'
+
+- name: Reconfigure APT-Daily-Timer
+  copy:
+    src: apt-daily/override.conf
+    dest: /etc/systemd/system/apt-daily.timer.d/override.conf
+    mode: '644'
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: true

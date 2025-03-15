@@ -1,0 +1,21 @@
+- name: Ensure timezone is set to UTC
+  community.general.timezone:
+    name: UTC
+
+    # - name: Set nullmailer recipient address
+    #   copy:
+    #     dest: /etc/nullmailer/adminaddr
+    #     content: '{{ admin_email }}'
+    #     mode: '644'
+    # 
+    # - name: Set nullmailer default domain
+    #   copy:
+    #     dest: /etc/nullmailer/defaultdomain
+    #     content: 'lewd.wtf'
+    #     mode: '644'
+    # 
+    # - name: Set nullmailer remote server
+    #   copy:
+    #     dest: /etc/nullmailer/remotes
+    #     content: 'www320.your-server.de smtp starttls'
+    #     mode: '600'

@@ -1,0 +1,74 @@
+---
+- name: Install docker and docker-compose
+  import_role:
+    name: geerlingguy.docker
+  vars:
+    docker_install_compose_plugin: true
+    docker_install_compose: fa1lse
+
+- name: Create root directory
+  file:
+    path: '/etc/docker-compose'
+    state: 'directory'
+    mode: '750'
+
+- name: Find all directories
+  find:
+    paths: templates/docker-compose/
+    file_type: directory
+    recurse: true
+  register: directories
+
+- name: Create directories
+  file:
+    path: '/etc/docker-compose/{{ item.path | regex_replace("templates\/docker-compose\/", "") }}'
+    state: 'directory'
+    mode: '755'
+  loop: '{{ directories.files }}'
+
+- name: Find all files
+  find:
+    paths: templates/docker-compose/
+    file_type: file
+    recurse: true
+    hidden: true
+  register: files
+
+- name: Render templates
+  ansible.builtin.template:
+    src: '{{ item.path }}'
+    dest: '/etc/docker-compose/{{ item.path | regex_replace("templates\/docker-compose\/", "") | regex_replace("\.j2", "") }}'
+    mode: '644'
+  loop: '{{ files.files }}'
+
+- name: Copy systemd template
+  ansible.builtin.copy:
+    src: systemd-docker-compose.service
+    dest: /etc/systemd/system/docker-compose@.service
+    mode: '400'
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Set up reload cronjob
+  ansible.builtin.cron:
+    name: "docker service reload"
+    minute: "0"
+    hour: "4"
+    job: "/bin/systemctl reload docker-compose@*.service"
+
+- name: Set up prune cronjob
+  ansible.builtin.cron:
+    name: "docker prune"
+    minute: "0"
+    hour: "5"
+    weekday: "4"
+    job: "/usr/bin/docker system prune --force > /dev/null"
+
+- name: Enable docker-compose services
+  ansible.builtin.systemd:
+    name: 'docker-compose@{{ item.path | regex_replace("templates\/docker-compose\/", "") }}'
+    enabled: true
+    state: started
+  loop: '{{ directories.files }}'
