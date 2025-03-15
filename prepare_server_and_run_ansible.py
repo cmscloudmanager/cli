@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -41,12 +42,19 @@ def prepare_known_hosts_file(host):
   with open(KNOWN_HOSTS_FILE, "w") as file:
     file.write(known_hosts)
 
-def ssh_exec(host, code):
-  res = subprocess.run(["/usr/bin/env", "ssh", "-o", "PasswordAuthentication=no", "-o", "UserKnownHostsFile={}".format(KNOWN_HOSTS_FILE), "-l", "root", host, "/usr/bin/env", "bash"], input=code.encode("utf-8"), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+def ssh_exec(host, code, pipe = True):
+  if pipe:
+    stdout = subprocess.PIPE
+    stderr = subprocess.PIPE
+  else:
+    stdout = None
+    stderr = None
+
+  res = subprocess.run(["/usr/bin/env", "ssh", "-o", "PasswordAuthentication=no", "-o", "UserKnownHostsFile={}".format(KNOWN_HOSTS_FILE), "-l", "root", host, "/usr/bin/env", "bash"], input=code.encode("utf-8"), stdout=stdout, stderr=stderr)
 
   return res
 
-def install_ansible(host):
+def prepare_server_and_run_ansible(host):
   print("setting up server {} for ansible".format(host))
 
   print("waiting for server to respond to ssh")
@@ -66,10 +74,10 @@ def install_ansible(host):
 
   for code in ["apt-get update", "apt-get -y upgrade", "apt-get -y install ansible"]:
 
-    res = ssh_exec(host, code)
+    res = ssh_exec(host, code, False)
 
     if res.returncode != 0:
-      print("fatal error: {} failed: {}".format(code ,res.stderr.decode("utf-8")))
+      print("fatal error: {} failed".format(code), file=sys.stderr)
 
       return 1
 
@@ -77,12 +85,45 @@ def install_ansible(host):
 
   for code in ["apt-get -y install ansible"]:
 
-    res = ssh_exec(host, code)
+    res = ssh_exec(host, code, False)
 
     if res.returncode != 0:
-      print("fatal error: {} failed: {}".format(code ,res.stderr.decode("utf-8")))
+      print("fatal error: {} failed".format(code), file=sys.stderr)
 
       return 1
 
+  print("installing ansible requirements")
+
+  res = ssh_exec(host, "cd ansible && ansible-galaxy install -r requirements.yml -p roles -f", False)
+
+  if res.returncode != 0:
+    print("fatal error: installing ansible requirements failed", file=sys.stderr)
+
+    return 1
+
+  print("uploading ansible playbook")
+
+  res = subprocess.run([
+    "/usr/bin/env",
+    "scp",
+    "-o", "PasswordAuthentication=no",
+    "-o", "User=root",
+    "-o", "UserKnownHostsFile={}".format(KNOWN_HOSTS_FILE),
+    "-r",
+    os.path.join(os.path.dirname(__file__), "ansible"),
+    "{}:./ansible".format(host)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+  if res.returncode != 0:
+    print("fatal error: scp ansible failed: {}".format(code ,res.stderr.decode("utf-8")), file=sys.stderr)
+
+    return 1
+
+  print("running ansible")
+
+  res = ssh_exec(host, "cd ansible && ansible-playbook --connection=local --inventory 127.0.0.1, playbook.yml -e letsencrypt_email=something@example.com", False)
+
+  if res.returncode != 0:
+    print("fatal error: running ansbible failed", file=sys.stderr)
+
 if __name__ == "__main__":
-  main(sys.argv[1])
+  prepare_server_and_run_ansible(sys.argv[1])
