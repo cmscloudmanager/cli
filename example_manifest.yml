@@ -1,7 +1,10 @@
 provider: hetzner
-apiKey: XXXX
+api_key: example_api_key
 instance: cpx21
 server_name: patrick-test
+uuid: test
+image: debian
+ssh_pub_key: example_ssh_pub_key
 
 components:
   - name: wordpress-1
