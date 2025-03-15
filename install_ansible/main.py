@@ -46,9 +46,7 @@ def ssh_exec(host, code):
 
   return res
 
-def main():
-  host = "65.108.217.90"
-
+def install_ansible(host):
   print("setting up server {} for ansible".format(host))
 
   print("waiting for server to respond to ssh")
@@ -86,4 +84,5 @@ def main():
 
       return 1
 
-main()
+if __name__ == "__main__":
+  main(sys.argv[1])
