@@ -1,0 +1,43 @@
+services:
+  nginx-proxy:
+    container_name: reverse-proxy-nginx-proxy
+    image: nginxproxy/nginx-proxy
+    restart: unless-stopped
+    volumes:
+      - reverse-proxy-confd:/etc/nginx/conf.d
+      - reverse-proxy-html:/usr/share/nginx/html
+      - reverse-proxy-certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./vhost.d:/etc/nginx/vhost.d
+      - ./conf.d:/etc/nginx/conf.d
+    networks:
+      - reverse-proxy
+    ports:
+      - '80:80'
+      - '443:443'
+
+  acme-companion:
+    container_name: reverse-proxy-acme-companion
+    image: nginxproxy/acme-companion
+    restart: unless-stopped
+    environment:
+      - DEFAULT_EMAIL={{ letsencrypt_email }}
+    volumes:
+      - reverse-proxy-certs:/etc/nginx/certs
+      - reverse-proxy-acme:/etc/acme.sh
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    volumes_from:
+      - nginx-proxy
+    depends_on:
+      - nginx-proxy
+    labels:
+      com.centurylinklabs.watchtower.depends-on: reverse-proxy-nginx-proxy
+
+networks:
+  reverse-proxy:
+
+volumes:
+  reverse-proxy-certs:
+  reverse-proxy-confd:
+  reverse-proxy-html:
+  reverse-proxy-acme:

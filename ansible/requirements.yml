@@ -1,0 +1,6 @@
+- src: https://github.com/geerlingguy/ansible-role-security
+  version: master
+  name: geerlingguy.security
+- src: https://github.com/geerlingguy/ansible-role-docker
+  version: master
+  name: geerlingguy.docker
