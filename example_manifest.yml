@@ -1,0 +1,12 @@
+provider: hetzner
+apiKey: XXXX
+instance: cpx21
+server_name: patrick-test
+
+components:
+  - name: wordpress-1
+    type: wordpress # if using docker: maybe call this `image`
+    config: ...
+  - name: mariadb-1
+    type: mariadb
+    config: ...
