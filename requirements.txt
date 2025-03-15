@@ -1,5 +1,6 @@
 certifi==2025.1.31
 charset-normalizer==3.4.1
+click==8.1.8
 hcloud==2.3.0
 idna==3.10
 python-dateutil==2.9.0.post0
