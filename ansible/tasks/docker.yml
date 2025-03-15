@@ -14,21 +14,21 @@
 
 - name: Find all directories
   find:
-    paths: templates/docker-compose/
+    paths: templates/docker-enabled/
     file_type: directory
     recurse: true
   register: directories
 
 - name: Create directories
   file:
-    path: '/etc/docker-compose/{{ item.path | regex_replace("templates\/docker-compose\/", "") }}'
+    path: '/etc/docker-compose/{{ item.path | regex_replace("templates\/docker-enabled\/", "") }}'
     state: 'directory'
     mode: '755'
   loop: '{{ directories.files }}'
 
 - name: Find all files
   find:
-    paths: templates/docker-compose/
+    paths: templates/docker-enabled/
     file_type: file
     recurse: true
     hidden: true
@@ -37,7 +37,7 @@
 - name: Render templates
   ansible.builtin.template:
     src: '{{ item.path }}'
-    dest: '/etc/docker-compose/{{ item.path | regex_replace("templates\/docker-compose\/", "") | regex_replace("\.j2", "") }}'
+    dest: '/etc/docker-compose/{{ item.path | regex_replace("templates\/docker-enabled\/", "") | regex_replace("\.j2", "") }}'
     mode: '644'
   loop: '{{ files.files }}'
 
@@ -68,7 +68,7 @@
 
 - name: Enable docker-compose services
   ansible.builtin.systemd:
-    name: 'docker-compose@{{ item.path | regex_replace("templates\/docker-compose\/", "") }}'
+    name: 'docker-compose@{{ item.path | regex_replace("templates\/docker-enabled\/", "") }}'
     enabled: true
     state: started
   loop: '{{ directories.files }}'
