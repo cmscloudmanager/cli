@@ -11,6 +11,12 @@ SSH_WAIT_TIMEOUT_SECONDS = 3
 WAIT_FOR_SSH_SLEEP_TIME_SECONDS = 1
 KNOWN_HOSTS_FILE=Path.home() / ".cmscloudmanager_known_hosts"
 
+def print_step(step):
+  print("\033[90m{}\033[0m".format(step))
+
+def print_error(message):
+  print("\033[91m{}\033[0m".format(step), file=sys.stderr)
+
 def wait_for_ssh(host):
   waiting_since = time.time_ns()
 
@@ -22,17 +28,17 @@ def wait_for_ssh(host):
 
     time.sleep(WAIT_FOR_SSH_SLEEP_TIME_SECONDS)
 
-  print("wait for ssh failed", file=sys.stderr)
+  print_error("wait for ssh failed")
 
-  return 1
+  exit(1)
 
 def ssh_keyscan(host):
   res = subprocess.run(["/usr/bin/env", "ssh-keyscan", "-H", "-T", str(SSH_WAIT_TIMEOUT_SECONDS), host], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
   if res.returncode != 0:
-    print("ssh-keycan {} failed: {}".format(host, res.stderr.decode("utf-8")), file=sys.stderr)
+    print_error("ssh-keycan {} failed: {}".format(host, res.stderr.decode("utf-8")))
 
-    return 1
+    exit(2)
 
   return res.stdout.decode("utf-8")
 
@@ -54,54 +60,29 @@ def ssh_exec(host, code, pipe = True):
 
   return res
 
-def prepare_server_and_run_ansible(host):
-  print("setting up server {} for ansible".format(host))
-
-  print("waiting for server to respond to ssh")
-
-  wait_for_ssh(host)
-
-  prepare_known_hosts_file(host)
-
-  res = ssh_exec(host, "true")
-
-  if res.returncode != 0:
-    print("fatal error: can not connect server via ssh: {}".format(res.stderr.decode("utf-8")), file=sys.stderr)
-
-    return res.returncode
-
-  print("updating server")
-
+def update_server(host):
   for code in ["apt-get update", "apt-get -y upgrade", "apt-get -y install ansible"]:
 
     res = ssh_exec(host, code, False)
 
     if res.returncode != 0:
-      print("fatal error: {} failed".format(code), file=sys.stderr)
+      print_error("fatal error: {} failed".format(code))
 
-      return 1
+      exit(3)
 
-  print("installing ansible")
-
+def install_ansible(host):
   for code in ["apt-get -y install ansible"]:
 
     res = ssh_exec(host, code, False)
 
     if res.returncode != 0:
-      print("fatal error: {} failed".format(code), file=sys.stderr)
+      print_error("fatal error: {} failed".format(code))
 
-      return 1
+      exit(4)
 
-  print("installing ansible requirements")
-
-  res = ssh_exec(host, "cd ansible && ansible-galaxy install -r requirements.yml -p roles -f", False)
-
-  if res.returncode != 0:
-    print("fatal error: installing ansible requirements failed", file=sys.stderr)
-
-    return 1
-
-  print("uploading ansible playbook")
+def upload_ansible_code(host):
+  # remove remains of previous runs
+  ssh_exec(host, "test -e ansible && rm -r ansible")
 
   res = subprocess.run([
     "/usr/bin/env",
@@ -114,16 +95,59 @@ def prepare_server_and_run_ansible(host):
     "{}:./ansible".format(host)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
   if res.returncode != 0:
-    print("fatal error: scp ansible failed: {}".format(code ,res.stderr.decode("utf-8")), file=sys.stderr)
+    print_error("fatal error: scp ansible failed: {}".format(code ,res.stderr.decode("utf-8")))
 
-    return 1
+    exit(5)
 
-  print("running ansible")
+def install_ansible_requirements(host):
+  res = ssh_exec(host, "cd ansible && ansible-galaxy install -r requirements.yml -p roles -f", False)
 
+  if res.returncode != 0:
+    print_error("fatal error: installing ansible requirements failed")
+
+    exit(6)
+
+def run_ansible(host):
   res = ssh_exec(host, "cd ansible && ansible-playbook --connection=local --inventory 127.0.0.1, playbook.yml -e letsencrypt_email=something@example.com", False)
 
   if res.returncode != 0:
-    print("fatal error: running ansbible failed", file=sys.stderr)
+    print_error("fatal error: running ansbible failed")
+
+def prepare_server_and_run_ansible(host):
+  print("\033[95msetting up server {} for ansible\033[0m".format(host))
+
+  print_step("waiting for server to respond to ssh")
+
+  wait_for_ssh(host)
+
+  prepare_known_hosts_file(host)
+
+  res = ssh_exec(host, "true")
+
+  if res.returncode != 0:
+    print_error("fatal error: can not connect server via ssh: {}".format(res.stderr.decode("utf-8")))
+
+    return res.returncode
+
+  print_step("updating server")
+
+  update_server(host)
+
+  print_step("installing ansible")
+
+  install_ansible(host)
+
+  print_step("uploading ansible code")
+
+  upload_ansible_code(host)
+
+  print_step("installing ansible requirements")
+
+  install_ansible_requirements(host)
+
+  print_step("running ansible")
+
+  run_ansible(host)
 
 if __name__ == "__main__":
   prepare_server_and_run_ansible(sys.argv[1])
