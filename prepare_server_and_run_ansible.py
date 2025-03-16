@@ -50,8 +50,8 @@ class Server:
   def wait_for_ssh(self, max_wait_time_seconds):
     waiting_since = time.time_ns()
 
-    while time.time_ns() < waiting_since + (max_wait_time_seconds * 10 ** 6):
-      res = self.ssh_keyscan(False)
+    while time.time_ns() < waiting_since + (max_wait_time_seconds * 10 ** 9):
+      res = self.ssh_keyscan()
 
       if res.returncode == 0:
         return

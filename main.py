@@ -4,6 +4,8 @@ import click
 from providers import ServerProvider
 from configuration import Configuration
 
+from prepare_server_and_run_ansible import Server 
+
 @click.group()
 def cli():
     pass
@@ -15,7 +17,10 @@ def deploy(file_name):
 
     provider = ServerProvider(config)
 
-    provider.provision_server()
+    ip = provider.provision_server()
+
+    server = Server(ip)
+    server.prepare_server_and_run_ansible()
 
 if __name__ == '__main__':
     cli()
