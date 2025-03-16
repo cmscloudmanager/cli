@@ -6,6 +6,10 @@ class AbstractProvider(ABC):
         pass
 
     @abstractmethod
+    def fetch_provisioned_server_ip(self):
+        pass
+
+    @abstractmethod
     def provision_server(self):
         pass
 
