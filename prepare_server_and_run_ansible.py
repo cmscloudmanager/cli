@@ -99,11 +99,31 @@ class Server:
 
     Ssh.exec(self.host, DNSCONTROL_COMMANDLINE, False)
 
-  def wait_for_dns(self, dns, record_types = ['A', 'AAAA']):
+  def wait_for_dns(self, dns, ips = []):
     splitdns = dns.split(".")
 
     zone = ".".join(splitdns[-2:])
     name = ".".join(splitdns[:-2])
+
+    ipv4s = []
+    ipv6s = []
+
+    record_types = []
+
+    for ip in ips:
+      if ":" in ip:
+        ipv4s.append(ip)
+
+        if "A" not in record_types:
+          record_types.append("A")
+
+        continue
+
+      if "." in ip:
+        ipv6s.append(ip)
+
+        if "AAAA" not in record_types:
+          record_types.append("AAAA")
 
     res = Ssh.exec(self.host, "dig +short NS {}".format(zone))
 
@@ -126,10 +146,14 @@ class Server:
           res = Ssh.exec(self.host, "dig @{} +short {} {}".format(nameserver, record_type, dns))
 
           if res.returncode != 0:
-            fatal_error("dig A {} failed: {}".format(dns, res.stderr.decode("utf-8")))
+            fatal_error("dig {} {} failed: {}".format(record_type, dns, res.stderr.decode("utf-8")))
 
-          # this is fine
-          if bool(str(res.stdout.decode("utf-8"))):
+          if record_type == 'A':
+            record_type_ips = ipv4s
+          else:
+            record_type_ips = ipv6s
+
+          if set(res.stdout.decode("utf-8").split("\n")[:-1]) == set(record_type_ips):
             ok_nameservers.append(nameserver)
 
         if ok_nameservers == nameservers:
