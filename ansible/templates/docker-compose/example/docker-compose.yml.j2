@@ -2,9 +2,9 @@ services:
   example:
     image: paulbouwer/hello-kubernetes:1
     environment:
-      - VIRTUAL_HOST={{ helloworld.hostname }}
+      - VIRTUAL_HOST={{ svc_config.hostname }}
       - VIRTUAL_PORT=8080
-      - LETSENCRYPT_HOST={{ helloworld.hostname }}
+      - LETSENCRYPT_HOST={{ svc_config.hostname }}
     restart: unless-stopped
     networks:
       - reverse-proxy_reverse-proxy
