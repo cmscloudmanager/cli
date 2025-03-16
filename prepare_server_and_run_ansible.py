@@ -186,7 +186,9 @@ class Server:
 
     self.run_ansible()
 
-  def run_dnscontrol(self)
+    print("\033[92mServer {} ready :-)\033[0m".format(self.host))
+
+  def run_dnscontrol(self):
     self.upload_dir("dns")
 
     self.ssh_exec(DNSCONTROL_COMMANDLINE)
