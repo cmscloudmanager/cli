@@ -39,10 +39,10 @@ class HetznerDnsProvider(AbstractDnsProvider):
             content += f"D('{zone}', NewRegistrar('none', 'NONE'), DnsProvider(NewDnsProvider('hetzner', 'HETZNER')), NO_PURGE,\n"
             for name in names:
                 if self.server_info.ipv4 != None:
-                    content += f"  A('{name}', '{self.server_info.ipv4}'), \n"
+                    content += f"  A('{name}', '{self.server_info.ipv4}', TTL('60s')), \n"
                 if self.server_info.ipv6 != None:
                     net = self.server_info.ipv6.split('/')[0]
-                    content += f"  AAAA('{name}', '{net}1'), \n"
+                    content += f"  AAAA('{name}', '{net}1', TTL('60s')), \n"
 
             content += f");\n"
 
