@@ -26,6 +26,8 @@ def deploy(file_name):
         ip = provider.provision_server()
         click.echo(f"Server {ip} successfully provisioned")
 
+    config.render_ansible_vars()
+
     s = Server(ip)
     s.prepare_server_and_run_ansible()
 

@@ -1,5 +1,6 @@
-provider: hetzner
-api_key: example_api_key
+provider:
+  type: hetzner
+  api_key: example_api_key
 instance: cpx21
 server_name: patrick-test
 uuid: test
