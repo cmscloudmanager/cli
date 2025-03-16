@@ -13,6 +13,7 @@ SSH_WAIT_TIMEOUT_SECONDS = 3
 WAIT_FOR_SSH_SLEEP_TIME_SECONDS = 1
 KNOWN_HOSTS_FILE=Path.home() / ".cmscloudmanager_known_hosts"
 LSB_RELEASE_FILE = "/etc/lsb-release"
+DNSCONTROL_COMMANDLINE = "docker run --rm -v ./dns:/dns ghcr.io/stackexchange/dnscontrol preview"
 
 def print_step(step):
   print("\033[90m{}\033[0m".format(step))
@@ -121,9 +122,9 @@ class Server:
   def install_ansible(self):
     pass
 
-  def upload_ansible_dir(self):
+  def upload_dir(self, dir):
     # remove remains of previous runs
-    self.ssh_exec("test -e ansible && rm -r ansible")
+    self.ssh_exec("test -e {} && rm -r {}".format(dir, dir))
 
     res = subprocess.run([
       "/usr/bin/env",
@@ -132,11 +133,11 @@ class Server:
       "-o", "User=root",
       "-o", "UserKnownHostsFile={}".format(KNOWN_HOSTS_FILE),
       "-r",
-      os.path.join(os.path.dirname(__file__), "ansible"),
-      "{}:./ansible".format(self.host)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      os.path.join(os.path.dirname(__file__), dir),
+      "{}:./{}".format(self.host, dir)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if res.returncode != 0:
-      fatal_error("scp ansible to {} failed: {}".format(self.host, res.stderr.decode("utf-8")))
+      fatal_error("scp {} to {} failed: {}".format(dir, self.host, res.stderr.decode("utf-8")))
 
   def install_ansible_requirements(self):
     res = self.ssh_exec("cd ansible && ansible-galaxy install -r requirements.yml -p roles -f", False)
@@ -175,7 +176,7 @@ class Server:
 
     print_step("uploading ansible code")
 
-    self.upload_ansible_dir()
+    self.upload_dir("ansible")
 
     print_step("installing ansible requirements")
 
@@ -184,6 +185,11 @@ class Server:
     print_step("running ansible")
 
     self.run_ansible()
+
+  def run_dnscontrol(self)
+    self.upload_dir("dns")
+
+    self.ssh_exec(DNSCONTROL_COMMANDLINE)
 
 if __name__ == "__main__":
   server = Server(sys.argv[1])
