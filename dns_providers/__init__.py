@@ -15,3 +15,5 @@ class DnsProvider():
     def render_dns_config(self):
         return self.provider.render_dns_config()
 
+    def get_hostnames(self):
+        return self.provider.get_hostnames()

@@ -30,7 +30,6 @@ def deploy(file_name):
 
     dns_provider = DnsProvider(config, server_info)
     dns_provider.render_dns_config()
-    return None
 
     s = Server(server_info.ipv4)
     s.prepare_server_and_run_ansible()
@@ -39,6 +38,22 @@ def deploy(file_name):
 
     print("Setting up DNS")
     s.run_dnscontrol()
+
+    hostnames = dns_provider.get_hostnames()
+    for hostname in hostnames:
+        print(f"Waiting for DNS update for {hostname}")
+        s.wait_for_dns(hostname)
+
+    print(f"DNS record successfully updated")
+
+    print(f"\n-----\n")
+    print(f"ServeInfo:")
+    print(f"  IPv4: {server_info.ipv4}")
+    print(f"  IPv6: {server_info.ipv6}")
+    print(f"")
+    print(f"Deployed Web Apps:")
+    for hostname in hostnames:
+        print(f"  https://{hostname}")
 
 if __name__ == '__main__':
     cli()

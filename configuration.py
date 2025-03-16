@@ -36,7 +36,7 @@ class Configuration:
 
     def render_ansible_vars(self):
         variables = {
-            "lets_encrypt_email": self.lets_encrypt_email,
+            "letsencrypt_email": self.lets_encrypt_email,
             "docker_compose_services": self.components
         }
 
