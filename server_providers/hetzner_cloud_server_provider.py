@@ -3,19 +3,20 @@ from hcloud import Client
 from hcloud.images import Image
 from hcloud.server_types import ServerType
 
-from providers.abstract_provider import AbstractProvider
+from server_providers.abstract_server_provider import AbstractServerProvider
+from server_information import ServerInformation
 
 import base64
 import hashlib
 import sys
 
-class HetznerProvider(AbstractProvider):
+class HetznerCloudServerProvider(AbstractServerProvider):
     config: Configuration
     client: Client
 
     def __init__(self, config):
         self.config = config
-        self.client = Client(token=self.config.api_key)
+        self.client = Client(token=self.config.server_provider_api_key)
         super().__init__()
 
     def __fetch_ssh_key_by_pub_key(self):
@@ -35,13 +36,17 @@ class HetznerProvider(AbstractProvider):
     def register_ssh_pub_key(self):
         return self.client.ssh_keys.create(f"{self.config.server_name} Key", self.config.ssh_pub_key, {})
 
-    def fetch_provisioned_server_ip(self):
+    def fetch_provisioned_server(self):
         servers = self.client.servers.get_all(label_selector=f"deployment_uuid={self.config.uuid}")
 
         length = len(servers)
 
         if length == 1:
-            return servers[0].public_net.primary_ipv4.ip
+            server = servers[0]
+            ipv4 = server.public_net.primary_ipv4.ip
+            ipv6 = server.public_net.primary_ipv6.ip
+            return ServerInformation(ipv4, ipv6)
+
         if length == 0:
             return None
 
@@ -64,4 +69,6 @@ class HetznerProvider(AbstractProvider):
             labels={'deployment_uuid': self.config.uuid}
         )
 
-        return response.server.public_net.primary_ipv4.ip
+        ipv4 = response.server.public_net.primary_ipv4.ip
+        ipv6 = response.server.public_net.primary_ipv6.ip
+        return ServerInformation(ipv4, ipv6)

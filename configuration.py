@@ -1,17 +1,21 @@
 import yaml
 
 class Configuration:
-    provider: str
-    api_key: str
+    server_provider_type: str
+    server_provider_api_key: str
+    dns_provider_type: str
+    dns_provider_api_key: str
     instance: str
     server_name: str
     uuid: str
     image: str
     ssh_pub_key: str
 
-    def __init__(self, provider, api_key, instance, server_name, uuid, image, ssh_pub_key, lets_encrypt_email, components):
-        self.provider = provider
-        self.api_key = api_key
+    def __init__(self, server_provider_type, server_provider_api_key, dns_provider_type, dns_provider_api_key,instance, server_name, uuid, image, ssh_pub_key, lets_encrypt_email, components):
+        self.server_provider_type = server_provider_type
+        self.server_provider_api_key = server_provider_api_key
+        self.dns_provider_type = dns_provider_type
+        self.dns_provider_api_key = dns_provider_api_key
         self.instance = instance
         self.server_name = server_name
         self.uuid = uuid
@@ -28,7 +32,7 @@ class Configuration:
             except yaml.YAMLError as exc:
                 click.echo(exc)
             
-        return cls(yml['provider']['type'], yml['provider']['api_key'], yml['instance'], yml['server_name'], yml['uuid'], yml['image'], yml['ssh_pub_key'], yml['lets_encrypt_email'], yml['components'])
+        return cls(yml['provider']['type'], yml['provider']['api_key'], yml['dns']['type'], yml['dns']['api_key'],yml['instance'], yml['server_name'], yml['uuid'], yml['image'], yml['ssh_pub_key'], yml['lets_encrypt_email'], yml['components'])
 
     def render_ansible_vars(self):
         variables = {
