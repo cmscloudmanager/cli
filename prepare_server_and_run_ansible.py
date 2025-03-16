@@ -14,6 +14,7 @@ LSB_RELEASE_FILE = "/etc/lsb-release"
 DISTRIB_ID_OS_MODULE_MAP = {
   "Ubuntu": "ubuntu"
 }
+REBOOT_REQUIRED_FILE="/run/reboot-required"
 
 def print_step(step):
   print("\033[90m{}\033[0m".format(step))
@@ -22,7 +23,7 @@ def print_error(message):
   print("\033[91m{}\033[0m".format(message), file=sys.stderr)
 
 def fatal_error(message):
-  print_error(message)
+  print_error("fatal error: {}".format(message))
   exit(1)
 
 class Server:
@@ -46,10 +47,10 @@ class Server:
 
     return res
 
-  def wait_for_ssh(self):
+  def wait_for_ssh(self, max_wait_time_seconds):
     waiting_since = time.time_ns()
 
-    while time.time_ns() < waiting_since + (SSH_MAX_WAIT_TIME_SECONDS * 10 ** 6):
+    while time.time_ns() < waiting_since + (max_wait_time_seconds * 10 ** 6):
       res = self.ssh_keyscan(False)
 
       if res.returncode == 0:
@@ -95,13 +96,18 @@ class Server:
     res = self.ssh_exec("true")
 
     if res.returncode != 0:
-      fatal_error("fatal error: can not connect {} via ssh: {}".format(self.host, res.stderr.decode("utf-8")))
+      fatal_error("can not connect {} via ssh: {}".format(self.host, res.stderr.decode("utf-8")))
+
+  def try_read_file(self, file):
+    res = self.ssh_exec("cat {}".format(file))
+
+    return res
 
   def detect_os_specific_module(self):
-    res = self.ssh_exec("cat {}".format(LSB_RELEASE_FILE))
+    res = self.try_read_file(LSB_RELEASE_FILE)
 
     if res.returncode != 0:
-      fatal_error("fatal error: can not read {}: {}".format(LSB_RELEASE_FILE, res.stderr.decode("utf-8")))
+      fatal_error("can not read {}: {}".format(LSB_RELEASE_FILE, res.stderr.decode("utf-8")))
 
     distrib_id = None
 
@@ -110,7 +116,7 @@ class Server:
         distrib_id = line[11:]
 
     if not distrib_id or not distrib_id in DISTRIB_ID_OS_MODULE_MAP:
-      fatal_error("fatal error: distrib id {} is unknown".format(str(distrib_id)))
+      fatal_error("distrib id {} is unknown".format(str(distrib_id)))
 
     os_specific_module = DISTRIB_ID_OS_MODULE_MAP[distrib_id]
 
@@ -122,7 +128,25 @@ class Server:
       res = self.ssh_exec(code, False)
 
       if res.returncode != 0:
-        fatal_error("fatal error: {} failed".format(code))
+        fatal_error("{} failed".format(code))
+
+    res = self.try_read_file(REBOOT_REQUIRED_FILE)
+
+    if res.returncode != 0:
+      print("can not read {}: {}".format(REBOOT_REQUIRED_FILE, res.stderr.decode("utf-8")))
+
+      print("skipping reboot")
+
+      return
+
+    reboot_required = res.stdout.decode("utf-8")
+
+    print("wait for server to reboot")
+
+    # this is fine
+    self.ssh_exec("echo 1 > /proc/sys/kernel/sysrq && echo s > /proc/sysrq-trigger && echo b > /proc/sysrq-trigger")
+
+    self.wait_for_ssh(300)
 
   def install_ansible(self):
     for code in ["apt-get -y install ansible"]:
@@ -130,7 +154,7 @@ class Server:
       res = self.ssh_exec(code, False)
 
       if res.returncode != 0:
-        fatal_error("fatal error: {} failed".format(code))
+        fatal_error("{} failed".format(code))
 
   def upload_ansible_dir(self):
     # remove remains of previous runs
@@ -147,26 +171,26 @@ class Server:
       "{}:./ansible".format(self.host)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if res.returncode != 0:
-      fatal_error("fatal error: scp ansible to {} failed: {}".format(self.host, res.stderr.decode("utf-8")))
+      fatal_error("scp ansible to {} failed: {}".format(self.host, res.stderr.decode("utf-8")))
 
   def install_ansible_requirements(self):
     res = self.ssh_exec("cd ansible && ansible-galaxy install -r requirements.yml -p roles -f", False)
 
     if res.returncode != 0:
-      fatal_error("fatal error: installing ansible requirements failed")
+      fatal_error("installing ansible requirements failed")
 
   def run_ansible(self):
     res = self.ssh_exec("cd ansible && ansible-playbook --connection=local --inventory 127.0.0.1, playbook.yml -e letsencrypt_email=something@example.com", False)
 
     if res.returncode != 0:
-      fatal_error("fatal error: running ansible failed")
+      fatal_error("running ansible failed")
 
   def prepare_server_and_run_ansible(self):
     print_step("setting up {} for ansible".format(self.host))
 
     print_step("waiting for server to respond to ssh")
 
-    self.wait_for_ssh()
+    self.wait_for_ssh(SSH_MAX_WAIT_TIME_SECONDS)
 
     self.prepare_known_hosts_file()
 
