@@ -14,5 +14,5 @@ class ServerProvider():
         self.provider = provider(config)
 
     def provision_server(self):
-        self.provider.provision_server()
+        return self.provider.provision_server()
 

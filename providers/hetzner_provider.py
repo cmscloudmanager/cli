@@ -43,7 +43,7 @@ class HetznerProvider(AbstractProvider):
 
         image_name = self.__map_image_to_os_image()
 
-        self.client.servers.create(
+        response = self.client.servers.create(
             name=self.config.server_name,
             server_type=ServerType(name=self.config.instance),
             image=Image(name=image_name),
@@ -51,3 +51,4 @@ class HetznerProvider(AbstractProvider):
             labels={'deployment_uuid': self.config.uuid}
         )
 
+        return response.server.public_net.primary_ipv4.ip
