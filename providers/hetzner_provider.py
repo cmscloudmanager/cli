@@ -7,6 +7,7 @@ from providers.abstract_provider import AbstractProvider
 
 import base64
 import hashlib
+import sys
 
 class HetznerProvider(AbstractProvider):
     config: Configuration
@@ -14,6 +15,7 @@ class HetznerProvider(AbstractProvider):
 
     def __init__(self, config):
         self.config = config
+        self.client = Client(token=self.config.api_key)
         super().__init__()
 
     def __fetch_ssh_key_by_pub_key(self):
@@ -33,9 +35,20 @@ class HetznerProvider(AbstractProvider):
     def register_ssh_pub_key(self):
         return self.client.ssh_keys.create(f"{self.config.server_name} Key", self.config.ssh_pub_key, {})
 
-    def provision_server(self):
-        self.client = Client(token=self.config.api_key)
+    def fetch_provisioned_server_ip(self):
+        servers = self.client.servers.get_all(label_selector=f"deployment_uuid={self.config.uuid}")
 
+        length = len(servers)
+
+        if length == 1:
+            return servers[0].public_net.primary_ipv4.ip
+        if length == 0:
+            return None
+
+        print("Multiple servers with same deployment_uuid found. Aborting!")
+        sys.exit(1)
+
+    def provision_server(self):
         ssh_key = self.__fetch_ssh_key_by_pub_key()
 
         if ssh_key == None:

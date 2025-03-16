@@ -17,10 +17,17 @@ def deploy(file_name):
 
     provider = ServerProvider(config)
 
-    ip = provider.provision_server()
+    click.echo
+    ip = provider.fetch_provisioned_server_ip()
+    if ip != None:
+        click.echo(f"Server {ip} already provisioned")
+    else:
+        click.echo(f"Provisioning server...")
+        ip = provider.provision_server()
+        click.echo(f"Server {ip} successfully provisioned")
 
-    server = Server(ip)
-    server.prepare_server_and_run_ansible()
+    s = Server(ip)
+    s.prepare_server_and_run_ansible()
 
 if __name__ == '__main__':
     cli()
