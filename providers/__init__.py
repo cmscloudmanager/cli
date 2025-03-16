@@ -1,0 +1,18 @@
+from providers.hetzner_provider import HetznerProvider
+
+PROVIDER_TO_CLASS_MAP = {
+    "hetzner": HetznerProvider
+}
+
+class ServerProvider():
+    def __init__(self, config):
+        self.config = config
+        provider = PROVIDER_TO_CLASS_MAP[config.provider]
+        if provider == None:
+            print("Adapter '{config.provider}' is not implemented")
+            sys.exit(1)
+        self.provider = provider(config)
+
+    def provision_server(self):
+        self.provider.provision_server()
+
