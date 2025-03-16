@@ -10,6 +10,10 @@ SSH_MAX_WAIT_TIME_SECONDS = 120
 SSH_WAIT_TIMEOUT_SECONDS = 3
 WAIT_FOR_SSH_SLEEP_TIME_SECONDS = 1
 KNOWN_HOSTS_FILE=Path.home() / ".cmscloudmanager_known_hosts"
+LSB_RELEASE_FILE = "/etc/lsb-release"
+DISTRIB_ID_OS_MODULE_MAP = {
+  "Ubuntu": "ubuntu_specifics"
+}
 
 def print_step(step):
   print("\033[90m{}\033[0m".format(step))
@@ -93,6 +97,25 @@ class Server:
     if res.returncode != 0:
       fatal_error("fatal error: can not connect {} via ssh: {}".format(self.host, res.stderr.decode("utf-8")))
 
+  def detect_os_specific_module(self):
+    res = self.ssh_exec("cat {}".format(LSB_RELEASE_FILE))
+
+    if res.returncode != 0:
+      fatal_error("fatal error: can not read {}: {}".format(LSB_RELEASE_FILE, res.stderr.decode("utf-8")))
+
+    distrib_id = None
+
+    for line in res.stdout.decode("utf-8").split("\n"):
+      if line.startswith("DISTRIB_ID="):
+        distrib_id = line[11:]
+
+    if not distrib_id or not distrib_id in DISTRIB_ID_OS_MODULE_MAP:
+      fatal_error("fatal error: distrib id {} is unknown".format(str(distrib_id)))
+
+    os_specific_module = DISTRIB_ID_OS_MODULE_MAP[distrib_id]
+
+    return os_specific_module
+
   def update_server(self):
     for code in ["apt-get update", "apt-get -y upgrade"]:
 
@@ -148,6 +171,8 @@ class Server:
     self.prepare_known_hosts_file()
 
     self.check_ssh_connect()
+
+    self.detect_os_specific_module()
 
     print_step("updating server")
 
