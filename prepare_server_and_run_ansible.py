@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import requests
 import sys
 import time
 
@@ -96,7 +97,7 @@ class Server:
 
     print_step("deploying dns")
 
-    Ssh.exec(self.host, DNSCONTROL_COMMANDLINE)
+    Ssh.exec(self.host, DNSCONTROL_COMMANDLINE, False)
 
   def wait_for_dns(self, dns):
     splitdns = dns.split(".")
@@ -142,4 +143,8 @@ if __name__ == "__main__":
 
   server.run_dnscontrol()
 
-  server.wait_for_dns("nonexistent.example.com")
+  dns = "www.example.com"
+
+  server.wait_for_dns(dns)
+
+  # print(requests.get("https://{}".format(dns)).text)
