@@ -98,11 +98,11 @@ class Server:
 
     Ssh.exec(self.host, DNSCONTROL_COMMANDLINE)
 
-  def wait_for_dns(self):
-    # name = "nonexistent"
-    name = "www"
-    zone = "dskyio.com"
-    dns = "{}.{}".format(name, zone)
+  def wait_for_dns(self, dns):
+    splitdns = dns.split(".")
+
+    zone = ".".join(splitdns[-2:])
+    name = ".".join(splitdns[:-2])
 
     res = Ssh.exec(self.host, "dig +short NS {}".format(zone))
 
@@ -133,15 +133,13 @@ class Server:
 
       time.sleep(2)
 
-    print_error("wait for dns failed")
-
-    return 1
+    fatal_error("wait for dns failed")
 
 if __name__ == "__main__":
   server = Server(sys.argv[1])
 
   # server.prepare_server_and_run_ansible()
 
-  # server.run_dnscontrol()
+  server.run_dnscontrol()
 
-  server.wait_for_dns()
+  server.wait_for_dns("nonexistent.example.com")
