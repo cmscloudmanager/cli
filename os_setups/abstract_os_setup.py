@@ -10,3 +10,7 @@ class AbstractOsSetup(ABC):
   @abstractmethod
   def install_ansible(self):
     pass
+
+  @abstractmethod
+  def install_dnsutils(self):
+    pass

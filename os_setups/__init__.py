@@ -24,3 +24,6 @@ class OsSetup():
 
   def install_ansible(self):
     return self.os_setup.install_ansible()
+
+  def install_dnsutils(self):
+    return self.os_setup.install_dnsutils()

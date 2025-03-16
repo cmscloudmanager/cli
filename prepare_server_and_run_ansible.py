@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import time
 
 from ssh_and_scp import Ssh
 from os_setups import OsSetup
@@ -74,6 +75,8 @@ class Server:
 
     os_setup.install_ansible()
 
+    os_setup.install_dnsutils()
+
     print_step("uploading ansible config")
 
     Ssh.upload_dir(self.host, "ansible")
@@ -86,8 +89,6 @@ class Server:
 
     self.run_ansible()
 
-    print("\033[92mServer {} ready :-)\033[0m".format(self.host))
-
   def run_dnscontrol(self):
     print_step("uploading dns config")
 
@@ -97,9 +98,50 @@ class Server:
 
     Ssh.exec(self.host, DNSCONTROL_COMMANDLINE)
 
-    print("\033[92mDNS ready :-)\033[0m")
+  def wait_for_dns(self):
+    # name = "nonexistent"
+    name = "www"
+    zone = "dskyio.com"
+    dns = "{}.{}".format(name, zone)
+
+    res = Ssh.exec(self.host, "dig +short NS {}".format(zone))
+
+    if res.returncode != 0:
+      fatal_error("dig NS {} failed: {}".format(zone, res.stderr.decode("utf-8")))
+
+      return
+
+    nameservers = res.stdout.decode("utf-8").split("\n")[:-1]
+
+    waiting_since = time.time_ns()
+
+    while time.time_ns() < waiting_since + (300 * 10 ** 9):
+      ok_nameservers = []
+
+      for nameserver in nameservers:
+        res = Ssh.exec(self.host, "dig @{} +short A {}".format(nameserver, dns))
+
+        if res.returncode != 0:
+          fatal_error("dig A {} failed: {}".format(dns, res.stderr.decode("utf-8")))
+
+        # this is fine
+        if bool(str(res.stdout.decode("utf-8"))):
+          ok_nameservers.append(nameserver)
+
+      if ok_nameservers == nameservers:
+        return
+
+      time.sleep(2)
+
+    print_error("wait for dns failed")
+
+    return 1
 
 if __name__ == "__main__":
   server = Server(sys.argv[1])
 
-  server.prepare_server_and_run_ansible()
+  # server.prepare_server_and_run_ansible()
+
+  # server.run_dnscontrol()
+
+  server.wait_for_dns()

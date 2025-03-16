@@ -44,3 +44,11 @@ class UbuntuOsSetup(AbstractOsSetup):
 
       if res.returncode != 0:
         fatal_error("{} failed".format(code))
+
+  def install_dnsutils(self):
+    for code in ["apt-get -y install dnsutils"]:
+
+      res = Ssh.exec(self.server.host, code, False)
+
+      if res.returncode != 0:
+        fatal_error("{} failed".format(code))
