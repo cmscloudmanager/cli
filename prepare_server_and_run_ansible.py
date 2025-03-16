@@ -17,40 +17,56 @@ def print_step(step):
 def print_error(message):
   print("\033[91m{}\033[0m".format(message), file=sys.stderr)
 
-class Renameme:
+def fatal_error(message):
+  print_error(message)
+  exit(1)
+
+class Server:
   def __init__(self, host):
     self.host = host
+
+  def ssh_keyscan(self, pipe_or_devnull = True):
+    if pipe_or_devnull:
+      stdout = subprocess.PIPE
+      stderr = subprocess.PIPE
+    else:
+      stdout = subprocess.DEVNULL
+      stderr = subprocess.DEVNULL
+
+    res = subprocess.run([
+      "/usr/bin/env",
+      "ssh-keyscan",
+      "-H",
+      "-T", str(SSH_WAIT_TIMEOUT_SECONDS),
+      self.host], stdout=stdout, stderr=stderr)
+
+    return res
 
   def wait_for_ssh(self):
     waiting_since = time.time_ns()
 
     while time.time_ns() < waiting_since + (SSH_MAX_WAIT_TIME_SECONDS * 10 ** 6):
-      res = subprocess.run(["/usr/bin/env", "ssh-keyscan", "-H", "-T", str(SSH_WAIT_TIMEOUT_SECONDS), self.host], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+      res = self.ssh_keyscan(False)
 
       if res.returncode == 0:
         return
 
       time.sleep(WAIT_FOR_SSH_SLEEP_TIME_SECONDS)
 
-    print_error("wait for ssh failed")
+    print_error("wait for ssh failed: ssh-keycan {} failed: {}".format(self.host, res.stderr.decode("utf-8")))
 
-    exit(1)
+    return 1
 
-  def ssh_keyscan(self):
-    res = subprocess.run(["/usr/bin/env", "ssh-keyscan", "-H", "-T", str(SSH_WAIT_TIMEOUT_SECONDS), self.host], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  def prepare_known_hosts_file(self):
+    res = self.ssh_keyscan()
 
     if res.returncode != 0:
       print_error("ssh-keycan {} failed: {}".format(self.host, res.stderr.decode("utf-8")))
 
       exit(2)
 
-    return res.stdout.decode("utf-8")
-
-  def prepare_known_hosts_file(self):
-    known_hosts = self.ssh_keyscan()
-
     with open(KNOWN_HOSTS_FILE, "w") as file:
-      file.write(known_hosts)
+      file.write(res.stdout.decode("utf-8"))
 
   def ssh_exec(self, code, pipe = True):
     if pipe:
@@ -71,15 +87,19 @@ class Renameme:
 
     return res
 
+  def check_ssh_connect(self):
+    res = self.ssh_exec("true")
+
+    if res.returncode != 0:
+      fatal_error("fatal error: can not connect {} via ssh: {}".format(self.host, res.stderr.decode("utf-8")))
+
   def update_server(self):
-    for code in ["apt-get update", "apt-get -y upgrade", "apt-get -y install ansible"]:
+    for code in ["apt-get update", "apt-get -y upgrade"]:
 
       res = self.ssh_exec(code, False)
 
       if res.returncode != 0:
-        print_error("fatal error: {} failed".format(code))
-
-        exit(4)
+        fatal_error("fatal error: {} failed".format(code))
 
   def install_ansible(self):
     for code in ["apt-get -y install ansible"]:
@@ -87,11 +107,9 @@ class Renameme:
       res = self.ssh_exec(code, False)
 
       if res.returncode != 0:
-        print_error("fatal error: {} failed".format(code))
+        fatal_error("fatal error: {} failed".format(code))
 
-        exit(5)
-
-  def upload_ansible_code(self):
+  def upload_ansible_dir(self):
     # remove remains of previous runs
     self.ssh_exec("test -e ansible && rm -r ansible")
 
@@ -106,26 +124,22 @@ class Renameme:
       "{}:./ansible".format(self.host)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if res.returncode != 0:
-      print_error("fatal error: scp ansible failed: {}".format(code ,res.stderr.decode("utf-8")))
-
-      exit(6)
+      fatal_error("fatal error: scp ansible to {} failed: {}".format(self.host, res.stderr.decode("utf-8")))
 
   def install_ansible_requirements(self):
     res = self.ssh_exec("cd ansible && ansible-galaxy install -r requirements.yml -p roles -f", False)
 
     if res.returncode != 0:
-      print_error("fatal error: installing ansible requirements failed")
-
-      exit(7)
+      fatal_error("fatal error: installing ansible requirements failed")
 
   def run_ansible(self):
     res = self.ssh_exec("cd ansible && ansible-playbook --connection=local --inventory 127.0.0.1, playbook.yml -e letsencrypt_email=something@example.com", False)
 
     if res.returncode != 0:
-      print_error("fatal error: running ansbible failed")
+      fatal_error("fatal error: running ansible failed")
 
   def prepare_server_and_run_ansible(self):
-    print("\033[95msetting up server {} for ansible\033[0m".format(self.host))
+    print_step("setting up {} for ansible".format(self.host))
 
     print_step("waiting for server to respond to ssh")
 
@@ -133,12 +147,7 @@ class Renameme:
 
     self.prepare_known_hosts_file()
 
-    res = self.ssh_exec("true")
-
-    if res.returncode != 0:
-      print_error("fatal error: can not connect server via ssh: {}".format(res.stderr.decode("utf-8")))
-
-      exit(3)
+    self.check_ssh_connect()
 
     print_step("updating server")
 
@@ -150,7 +159,7 @@ class Renameme:
 
     print_step("uploading ansible code")
 
-    self.upload_ansible_code()
+    self.upload_ansible_dir()
 
     print_step("installing ansible requirements")
 
