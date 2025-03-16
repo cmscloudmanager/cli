@@ -99,7 +99,7 @@ class Server:
 
     Ssh.exec(self.host, DNSCONTROL_COMMANDLINE, False)
 
-  def wait_for_dns(self, dns):
+  def wait_for_dns(self, dns, record_types = ['A', 'AAAA']):
     splitdns = dns.split(".")
 
     zone = ".".join(splitdns[-2:])
@@ -117,20 +117,26 @@ class Server:
     waiting_since = time.time_ns()
 
     while time.time_ns() < waiting_since + (300 * 10 ** 9):
-      ok_nameservers = []
+      record_types_ok = []
 
-      for nameserver in nameservers:
-        res = Ssh.exec(self.host, "dig @{} +short A {}".format(nameserver, dns))
+      for record_type in record_types:
+        ok_nameservers = []
 
-        if res.returncode != 0:
-          fatal_error("dig A {} failed: {}".format(dns, res.stderr.decode("utf-8")))
+        for nameserver in nameservers:
+          res = Ssh.exec(self.host, "dig @{} +short {} {}".format(nameserver, record_type, dns))
 
-        # this is fine
-        if bool(str(res.stdout.decode("utf-8"))):
-          ok_nameservers.append(nameserver)
+          if res.returncode != 0:
+            fatal_error("dig A {} failed: {}".format(dns, res.stderr.decode("utf-8")))
 
-      if ok_nameservers == nameservers:
-        return
+          # this is fine
+          if bool(str(res.stdout.decode("utf-8"))):
+            ok_nameservers.append(nameserver)
+
+        if ok_nameservers == nameservers:
+          record_types_ok.append(record_type)
+
+        if record_types_ok == record_types:
+          return
 
       time.sleep(2)
 
