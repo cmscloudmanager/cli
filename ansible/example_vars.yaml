@@ -1,0 +1,14 @@
+letsencrypt_email: ciapa@lewd.wtf
+docker_compose_services:
+  - name: watchtower
+    type: watchtower
+  - name: reverse-proxy
+    type: reverse-proxy
+  - name: wordpress
+    type: wordpress
+    config:
+      hostname: wp.pai.wtf
+  - name: helloworld
+    type: example
+    config:
+      hostname: sen.pai.wtf
