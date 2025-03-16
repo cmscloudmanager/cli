@@ -7,7 +7,7 @@ from os_setups import OsSetup
 
 SSH_MAX_WAIT_TIME_SECONDS = 120
 LSB_RELEASE_FILE = "/etc/lsb-release"
-ANSIBLE_COMMANDLINE = "ansible-playbook --connection=local --inventory 127.0.0.1, playbook.yml -e letsencrypt_email=something@example.com"
+ANSIBLE_COMMANDLINE = "ansible-playbook --connection=local --inventory 127.0.0.1, playbook.yml"
 ANSIBLE_GALAXY_INSTALL_COMMANDLINE = "ansible-galaxy install -r requirements.yml -p roles -f"
 DNSCONTROL_COMMANDLINE = "docker run --rm -v ./dns:/dns ghcr.io/stackexchange/dnscontrol push"
 
