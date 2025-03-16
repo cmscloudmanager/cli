@@ -111,7 +111,7 @@ class Server:
     record_types = []
 
     for ip in ips:
-      if ":" in ip:
+      if "." in ip:
         ipv4s.append(ip)
 
         if "A" not in record_types:
@@ -119,7 +119,7 @@ class Server:
 
         continue
 
-      if "." in ip:
+      if ":" in ip:
         ipv6s.append(ip)
 
         if "AAAA" not in record_types:
