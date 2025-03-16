@@ -5,3 +5,7 @@ class AbstractDnsProvider(ABC):
     def render_dns_config(self):
         pass
 
+    @abstractmethod
+    def get_hostnames(self):
+        pass
+

@@ -14,24 +14,29 @@ class HetznerDnsProvider(AbstractDnsProvider):
         self.server_info = server_info
         super().__init__()
 
-    def __get_zone_config_from_components(self):
-        zones = {}
+    def get_hostnames(self):
+        hostnames = []
         for component in self.config.components:
             if "config" in component and "hostname" in component["config"]:
-                hostname = component["config"]["hostname"]
-                arr = hostname.split(".")
-                zone = ".".join(arr[-2:])
-                name = ".".join(arr[:-2])
-                if zone not in zones:
-                    zones[zone] = []
-                zones[zone].append(name)
+                hostnames.append(component["config"]["hostname"])
+        return hostnames
+
+    def __get_zone_config_from_components(self):
+        zones = {}
+        for hostname in self.get_hostnames():
+            arr = hostname.split(".")
+            zone = ".".join(arr[-2:])
+            name = ".".join(arr[:-2])
+            if zone not in zones:
+                zones[zone] = []
+            zones[zone].append(name)
         return zones
 
     def render_dns_config(self):
         zones = self.__get_zone_config_from_components()
         content = ""
         for zone, names in zones.items():
-            content += f"D('{zone}', NewRegistrar('none', 'NONE'), NO_PURGE,\n"
+            content += f"D('{zone}', NewRegistrar('none', 'NONE'), DnsProvider(NewDnsProvider('hetzner', 'HETZNER')), NO_PURGE,\n"
             for name in names:
                 if self.server_info.ipv4 != None:
                     content += f"  A('{name}', '{self.server_info.ipv4}'), \n"
