@@ -13,7 +13,7 @@ SSH_WAIT_TIMEOUT_SECONDS = 3
 WAIT_FOR_SSH_SLEEP_TIME_SECONDS = 1
 KNOWN_HOSTS_FILE=Path.home() / ".cmscloudmanager_known_hosts"
 LSB_RELEASE_FILE = "/etc/lsb-release"
-DNSCONTROL_COMMANDLINE = "docker run --rm -v ./dns:/dns ghcr.io/stackexchange/dnscontrol preview"
+DNSCONTROL_COMMANDLINE = "docker run --rm -v ./dns:/dns ghcr.io/stackexchange/dnscontrol push"
 
 def print_step(step):
   print("\033[90m{}\033[0m".format(step))
@@ -174,7 +174,7 @@ class Server:
 
     os_setup.install_ansible()
 
-    print_step("uploading ansible code")
+    print_step("uploading ansible config")
 
     self.upload_dir("ansible")
 
@@ -189,9 +189,15 @@ class Server:
     print("\033[92mServer {} ready :-)\033[0m".format(self.host))
 
   def run_dnscontrol(self):
+    print_step("uploading dns config")
+
     self.upload_dir("dns")
 
+    print_step("deploying dns")
+
     self.ssh_exec(DNSCONTROL_COMMANDLINE)
+
+    print("\033[92mDNS ready :-)\033[0m")
 
 if __name__ == "__main__":
   server = Server(sys.argv[1])
