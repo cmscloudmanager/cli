@@ -12,7 +12,7 @@ WAIT_FOR_SSH_SLEEP_TIME_SECONDS = 1
 KNOWN_HOSTS_FILE=Path.home() / ".cmscloudmanager_known_hosts"
 LSB_RELEASE_FILE = "/etc/lsb-release"
 DISTRIB_ID_OS_MODULE_MAP = {
-  "Ubuntu": "ubuntu_specifics"
+  "Ubuntu": "ubuntu"
 }
 
 def print_step(step):
