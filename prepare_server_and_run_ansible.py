@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 
-SSH_MAX_WAIT_TIME_SECONDS = 5 # 120
+SSH_MAX_WAIT_TIME_SECONDS = 120
 SSH_WAIT_TIMEOUT_SECONDS = 3
 WAIT_FOR_SSH_SLEEP_TIME_SECONDS = 1
 KNOWN_HOSTS_FILE=Path.home() / ".cmscloudmanager_known_hosts"
@@ -17,7 +17,7 @@ def print_step(step):
 def print_error(message):
   print("\033[91m{}\033[0m".format(message), file=sys.stderr)
 
-class Server:
+class Renameme:
   def __init__(self, host):
     self.host = host
 
