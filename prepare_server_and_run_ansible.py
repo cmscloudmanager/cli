@@ -6,15 +6,13 @@ import subprocess
 import sys
 import time
 
+from os_setups import OsSetup
+
 SSH_MAX_WAIT_TIME_SECONDS = 120
 SSH_WAIT_TIMEOUT_SECONDS = 3
 WAIT_FOR_SSH_SLEEP_TIME_SECONDS = 1
 KNOWN_HOSTS_FILE=Path.home() / ".cmscloudmanager_known_hosts"
 LSB_RELEASE_FILE = "/etc/lsb-release"
-DISTRIB_ID_OS_MODULE_MAP = {
-  "Ubuntu": "ubuntu"
-}
-REBOOT_REQUIRED_FILE="/run/reboot-required"
 
 def print_step(step):
   print("\033[90m{}\033[0m".format(step))
@@ -103,7 +101,7 @@ class Server:
 
     return res
 
-  def detect_os_specific_module(self):
+  def try_read_distrib_id(self):
     res = self.try_read_file(LSB_RELEASE_FILE)
 
     if res.returncode != 0:
@@ -115,46 +113,13 @@ class Server:
       if line.startswith("DISTRIB_ID="):
         distrib_id = line[11:]
 
-    if not distrib_id or not distrib_id in DISTRIB_ID_OS_MODULE_MAP:
-      fatal_error("distrib id {} is unknown".format(str(distrib_id)))
-
-    os_specific_module = DISTRIB_ID_OS_MODULE_MAP[distrib_id]
-
-    return os_specific_module
+    return distrib_id
 
   def update_server(self):
-    for code in ["apt-get update", "apt-get -y upgrade"]:
-
-      res = self.ssh_exec(code, False)
-
-      if res.returncode != 0:
-        fatal_error("{} failed".format(code))
-
-    res = self.try_read_file(REBOOT_REQUIRED_FILE)
-
-    if res.returncode != 0:
-      print("can not read {}: {}".format(REBOOT_REQUIRED_FILE, res.stderr.decode("utf-8")))
-
-      print("skipping reboot")
-
-      return
-
-    reboot_required = res.stdout.decode("utf-8")
-
-    print("wait for server to reboot")
-
-    # this is fine
-    self.ssh_exec("echo 1 > /proc/sys/kernel/sysrq && echo s > /proc/sysrq-trigger && echo b > /proc/sysrq-trigger")
-
-    self.wait_for_ssh(300)
+    pass
 
   def install_ansible(self):
-    for code in ["apt-get -y install ansible"]:
-
-      res = self.ssh_exec(code, False)
-
-      if res.returncode != 0:
-        fatal_error("{} failed".format(code))
+    pass
 
   def upload_ansible_dir(self):
     # remove remains of previous runs
@@ -196,15 +161,17 @@ class Server:
 
     self.check_ssh_connect()
 
-    self.detect_os_specific_module()
+    distrib_id = self.try_read_distrib_id()
+
+    os_setup = OsSetup(distrib_id, self)
 
     print_step("updating server")
 
-    self.update_server()
+    os_setup.update_server()
 
     print_step("installing ansible")
 
-    self.install_ansible()
+    os_setup.install_ansible()
 
     print_step("uploading ansible code")
 
