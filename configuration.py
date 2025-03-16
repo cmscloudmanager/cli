@@ -42,3 +42,26 @@ class Configuration:
 
         with open('ansible/group_vars/all/vars.yml', 'w') as outfile:
             yaml.dump(variables, outfile, default_flow_style=False)
+
+    def set_server_provider_type(self, server_provider_type):
+        self.server_provider_type = server_provider_type
+    def set_server_provider_api_key(self, server_provider_api_key):
+        self.server_provider_api_key = server_provider_api_key
+    def set_dns_provider_type(self, dns_provider_type):
+        self.dns_provider_type = dns_provider_type
+    def set_dns_provider_api_key(self, dns_provider_api_key):
+        self.dns_provider_api_key = dns_provider_api_key
+    def set_instance(self, instance):
+        self.instance = instance
+    def set_server_name(self, server_name):
+        self.server_name = server_name
+    def set_uuid(self, uuid):
+        self.uuid = uuid
+    def set_image(self, image):
+        self.image = image
+    def set_ssh_pub_key(self, ssh_pub_key):
+        self.ssh_pub_key = ssh_pub_key
+    def set_lets_encrypt_email(self, lets_encrypt_email):
+        self.lets_encrypt_email = lets_encrypt_email
+    def set_components(self, components):
+        self.components = components
