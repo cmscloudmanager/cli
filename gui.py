@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import uuid
 
 from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
