@@ -159,7 +159,7 @@ class Server:
           else:
             record_type_ips = ipv6s
 
-          if set(res.stdout.decode("utf-8").split("\n")[:-1]) == set(record_type_ips):
+          if set(record_type_ips).issubset(set(res.stdout.decode("utf-8").split("\n")[:-1])):
             ok_nameservers.append(nameserver)
 
         if ok_nameservers == nameservers:
@@ -179,8 +179,8 @@ if __name__ == "__main__":
 
   # server.run_dnscontrol()
 
-  dns = "www.example.com"
+  dns = "test.cfhackathontest.com"
 
-  server.wait_for_dns(dns)
+  server.wait_for_dns(dns, [])
 
   # print(requests.get("https://{}".format(dns)).text)
