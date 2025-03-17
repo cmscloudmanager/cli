@@ -44,8 +44,9 @@ class HetznerCloudServerProvider(AbstractServerProvider):
         if length == 1:
             server = servers[0]
             ipv4 = server.public_net.primary_ipv4.ip
-            ipv6 = server.public_net.primary_ipv6.ip
-            return ServerInformation(ipv4, ipv6)
+            ipv6_net = server.public_net.primary_ipv6.ip
+            ipv6 = ipv6_net.split('/')[0]
+            return ServerInformation(ipv4, f"{ipv6}1")
 
         if length == 0:
             return None
@@ -70,5 +71,6 @@ class HetznerCloudServerProvider(AbstractServerProvider):
         )
 
         ipv4 = response.server.public_net.primary_ipv4.ip
-        ipv6 = response.server.public_net.primary_ipv6.ip
-        return ServerInformation(ipv4, ipv6)
+        ipv6_net = response.server.public_net.primary_ipv6.ip
+        ipv6 = ipv6_net.split('/')[0]
+        return ServerInformation(ipv4, f"{ipv6}1")
