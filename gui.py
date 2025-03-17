@@ -41,7 +41,7 @@ class WidgetGallery(QDialog):
         hostnames = dns_provider.get_hostnames()
         for hostname in hostnames:
             print(f"Waiting for DNS update for {hostname}")
-            s.wait_for_dns(hostname)
+            s.wait_for_dns(hostname, [server_info.ipv4, server_info.ipv6])
 
         print(f"DNS record successfully updated")
 
