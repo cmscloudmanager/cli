@@ -160,6 +160,7 @@ class Server:
             record_type_ips = ipv6s
 
           if set(record_type_ips).issubset(set(res.stdout.decode("utf-8").split("\n")[:-1])):
+            print("nameserver {} record type {} OK".format(nameserver, record_type))
             ok_nameservers.append(nameserver)
 
         if ok_nameservers == nameservers:
