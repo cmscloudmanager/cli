@@ -177,7 +177,7 @@ class Server:
     res = Ssh.exec(self.host, "systemctl restart docker-compose@reverse-proxy")
 
     if res.returncode != 0:
-      fatal_error("restarting reverse proxy failed: {}").format(res.stderr.decode("utf-8")))
+      fatal_error("restarting reverse proxy failed: {}".format(res.stderr.decode("utf-8")))
 
 if __name__ == "__main__":
   server = Server(sys.argv[1])
