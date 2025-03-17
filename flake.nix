@@ -19,6 +19,26 @@
               pip
               venvShellHook
             ]);
+          QT_PLUGIN_PATH="${pkgs.qt6.qtbase}/lib/qt-6/plugins";
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+            pkgs.libGL
+            pkgs.stdenv.cc.cc.lib
+            pkgs.libxkbcommon
+            pkgs.fontconfig
+            pkgs.xorg.libX11
+            pkgs.xorg.libxcb
+            pkgs.glib
+            pkgs.libz
+            pkgs.freetype
+            pkgs.zstd
+            pkgs.dbus
+            pkgs.xorg.libXcursor
+          ];
+          # shellHook = ''
+          #   bashdir=$(mktemp -d)
+          #   makeWrapper "$(type -p bash)" "$bashdir/bash" "''${qtWrapperArgs[@]}"
+          #   exec "$bashdir/bash"
+          # '';
         };
       });
     };

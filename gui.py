@@ -99,7 +99,7 @@ class WidgetGallery(QDialog):
         groupBox = QGroupBox("Provider Settings")
 
         providerComboBox = QComboBox()
-        providerComboBox.addItem("hetzner")
+        providerComboBox.addItem("hetzner-cloud")
         providerComboBox.textActivated.connect(self.config.set_server_provider_type)
 
         providerLabel = QLabel("&Provider:")
