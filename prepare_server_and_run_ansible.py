@@ -173,7 +173,7 @@ class Server:
 
     fatal_error("wait for dns failed")
 
-  def restart_reverse_proxy():
+  def restart_reverse_proxy(self):
     res = Ssh.exec(self.host, "systemctl restart docker-compose@reverse-proxy")
 
     if res.returncode != 0:
