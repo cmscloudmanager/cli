@@ -45,6 +45,9 @@ class WidgetGallery(QDialog):
 
         print(f"DNS record successfully updated")
 
+        print(f"Restarting services")
+        s.restart_reverse_proxy()
+
         print(f"\n-----\n")
         print(f"Server Info:")
         print(f"  IPv4: {server_info.ipv4}")
