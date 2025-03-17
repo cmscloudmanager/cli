@@ -1,16 +1,26 @@
-provider:
+provider: 
+  type: hetzner-cloud
+  api_key: ...
+dns: 
   type: hetzner
-  api_key: example_api_key
+  api_key: ...
 instance: cpx21
 server_name: patrick-test
-uuid: test
-image: debian
-ssh_pub_key: example_ssh_pub_key
+uuid: a98748d1-218f-4d62-a36f-6d7df84eb7bc
+image: ubuntu
+ssh_pub_key: ...
+lets_encrypt_email: mail@example.com
 
 components:
-  - name: wordpress-1
-    type: wordpress # if using docker: maybe call this `image`
-    config: ...
-  - name: mariadb-1
-    type: mariadb
-    config: ...
+  - name: watchtower
+    type: watchtower
+  - name: reverse-proxy
+    type: reverse-proxy
+  - name: wordpress
+    type: wordpress
+    config:
+      hostname: wp.example.com
+  - name: helloworld
+    type: example
+    config:
+      hostname: hello.example.com
