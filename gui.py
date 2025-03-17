@@ -169,8 +169,8 @@ class WidgetGallery(QDialog):
         instanceLabel.setBuddy(instanceComboBox)
 
         osComboBox = QComboBox()
-        osComboBox.addItem("debian")
         osComboBox.addItem("ubuntu")
+        osComboBox.addItem("debian")
         osComboBox.textActivated.connect(self.config.set_image)
         osLabel = QLabel("&Operating System:")
         osLabel.setBuddy(osComboBox)
