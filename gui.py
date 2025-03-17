@@ -46,7 +46,7 @@ class WidgetGallery(QDialog):
         print(f"DNS record successfully updated")
 
         print(f"\n-----\n")
-        print(f"ServeInfo:")
+        print(f"Server Info:")
         print(f"  IPv4: {server_info.ipv4}")
         print(f"  IPv6: {server_info.ipv6}")
         print(f"")
