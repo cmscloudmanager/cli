@@ -41,8 +41,7 @@ class HetznerDnsProvider(AbstractDnsProvider):
                 if self.server_info.ipv4 != None:
                     content += f"  A('{name}', '{self.server_info.ipv4}', TTL('60s')), \n"
                 if self.server_info.ipv6 != None:
-                    net = self.server_info.ipv6.split('/')[0]
-                    content += f"  AAAA('{name}', '{net}1', TTL('60s')), \n"
+                    content += f"  AAAA('{name}', '{self.server_info.ipv6}', TTL('60s')), \n"
 
             content += f");\n"
 
