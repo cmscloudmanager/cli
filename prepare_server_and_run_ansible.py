@@ -9,6 +9,7 @@ from os_setups import OsSetup
 
 SSH_MAX_WAIT_TIME_SECONDS = 120
 LSB_RELEASE_FILE = "/etc/lsb-release"
+DEBIAN_VERSION_FILE="/etc/debian_version"
 ANSIBLE_COMMANDLINE = "ansible-playbook --connection=local --inventory 127.0.0.1, playbook.yml"
 ANSIBLE_GALAXY_INSTALL_COMMANDLINE = "ansible-galaxy install -r requirements.yml -p roles -f"
 DNSCONTROL_COMMANDLINE = "docker run --rm -v ./dns:/dns ghcr.io/stackexchange/dnscontrol push"
@@ -31,7 +32,12 @@ class Server:
     res = Ssh.try_read_file(self.host, LSB_RELEASE_FILE)
 
     if res.returncode != 0:
-      fatal_error("can not read {}: {}".format(LSB_RELEASE_FILE, res.stderr.decode("utf-8")))
+      res = Ssh.try_read_file(self.host, DEBIAN_VERSION_FILE)
+
+      if res.returncode == 0:
+        distrib_id = 'Debian'
+      else:
+        fatal_error("can not read {} or {}: {}".format(LSB_RELEASE_FILE, DEBIAN_VERSION_FILE, res.stderr.decode("utf-8")))
 
     distrib_id = None
 
@@ -99,11 +105,31 @@ class Server:
 
     Ssh.exec(self.host, DNSCONTROL_COMMANDLINE, False)
 
-  def wait_for_dns(self, dns):
+  def wait_for_dns(self, dns, ips = []):
     splitdns = dns.split(".")
 
     zone = ".".join(splitdns[-2:])
     name = ".".join(splitdns[:-2])
+
+    ipv4s = []
+    ipv6s = []
+
+    record_types = []
+
+    for ip in ips:
+      if "." in ip:
+        ipv4s.append(ip)
+
+        if "A" not in record_types:
+          record_types.append("A")
+
+        continue
+
+      if ":" in ip:
+        ipv6s.append(ip)
+
+        if "AAAA" not in record_types:
+          record_types.append("AAAA")
 
     res = Ssh.exec(self.host, "dig +short NS {}".format(zone))
 
@@ -117,20 +143,30 @@ class Server:
     waiting_since = time.time_ns()
 
     while time.time_ns() < waiting_since + (300 * 10 ** 9):
-      ok_nameservers = []
+      record_types_ok = []
 
-      for nameserver in nameservers:
-        res = Ssh.exec(self.host, "dig @{} +short A {}".format(nameserver, dns))
+      for record_type in record_types:
+        ok_nameservers = []
 
-        if res.returncode != 0:
-          fatal_error("dig A {} failed: {}".format(dns, res.stderr.decode("utf-8")))
+        for nameserver in nameservers:
+          res = Ssh.exec(self.host, "dig @{} +short {} {}".format(nameserver, record_type, dns))
 
-        # this is fine
-        if bool(str(res.stdout.decode("utf-8"))):
-          ok_nameservers.append(nameserver)
+          if res.returncode != 0:
+            fatal_error("dig {} {} failed: {}".format(record_type, dns, res.stderr.decode("utf-8")))
 
-      if ok_nameservers == nameservers:
-        return
+          if record_type == 'A':
+            record_type_ips = ipv4s
+          else:
+            record_type_ips = ipv6s
+
+          if set(res.stdout.decode("utf-8").split("\n")[:-1]) == set(record_type_ips):
+            ok_nameservers.append(nameserver)
+
+        if ok_nameservers == nameservers:
+          record_types_ok.append(record_type)
+
+        if record_types_ok == record_types:
+          return
 
       time.sleep(2)
 
@@ -141,7 +177,7 @@ if __name__ == "__main__":
 
   # server.prepare_server_and_run_ansible()
 
-  server.run_dnscontrol()
+  # server.run_dnscontrol()
 
   dns = "www.example.com"
 

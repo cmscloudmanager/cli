@@ -1,0 +1,14 @@
+provider: 
+  type: ""
+  api_key: ""
+dns: 
+  type: ""
+  api_key: ""
+instance: ""
+server_name: ""
+uuid: ""
+image: ""
+ssh_pub_key: ""
+lets_encrypt_email: ""
+
+components: []

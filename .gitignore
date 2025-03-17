@@ -1,1 +1,5 @@
-.ansible/
+__pycache__
+.idea
+dns/dnsconfig.js
+dns/creds.json
+ansible/group_vars/all/vars.yml
